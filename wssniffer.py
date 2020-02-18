@@ -4,7 +4,6 @@ print("modules gotten")
 __author__="just a 14 year that did this in 2 days (youtube creator https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A), 16/02/2020-17/02/2020"
 
 """
-python /Users/iehome/Desktop/python_stuff/wspython/wssniffer.py
 stun for video calls and skype could be used but less used.
 notes:
 https://www.wireshark.org/docs/wsug_html_chunked/ChWorkBuildDisplayFilterSection.html
