@@ -6,3 +6,5 @@ Not the most original but I thought it was a great spent one and a half day proj
 follow the tutorial and install all avalible resources -> [here](https://www.wireshark.org/download.html).
 
 you may need to look up display filters for wireshark and tshark to fully use it.
+
+<script>alert("thanks for using my script!")</script>
