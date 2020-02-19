@@ -4,12 +4,8 @@ print("modules gotten")
 __author__="just a person that did this in 2 days (youtube creator https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A), 16/02/2020-17/02/2020"
 
 """
-stun for video calls and skype could be used but less used.
 notes:
-https://www.wireshark.org/docs/wsug_html_chunked/ChWorkBuildDisplayFilterSection.html
-https://www.cellstream.com/reference-reading/tipsandtricks/272-t-shark-usage-examples
-download (get tshark along with this in the same download):
-https://www.wireshark.org/download.html
+stun for video calls and skype could be used but less used.
 """
 
 def get_loc(jdata):
