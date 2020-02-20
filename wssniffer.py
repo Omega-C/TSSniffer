@@ -76,14 +76,14 @@ def run(flow_type,cmd_path,types=[]):
 
 def main():
 	flow_types=["ipl","srf"]
-	flow="ipl"
+	flow="srf"
 	while flow not in flow_types:
 		flow=str(input("type of flow ({}): ".format(",".join(flow_types))))
 
 	disp_filter=""
 	cap_filter=""
-	network="Wi-Fi"
-	path="\"C:\\Program Files\\Wireshark\\tshark.exe\""
+	network="Wi-Fi"#may need to change
+	path="\"C:\\Program Files\\Wireshark\\tshark.exe\""#may need to change
 	addons={"-i":network}
 	cmd=create_command(path,addons)
 	types=["STUN","DNS"]
