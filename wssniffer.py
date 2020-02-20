@@ -19,6 +19,12 @@ def get_loc(jdata):
 	except Exception as e:
 		return "\n{{}} ERROR,{}\n\n-----------".format(str(e)).format(ip)
 
+def create_command(path,addons):
+	end_command=path
+	for command in addons.keys():
+		end_command+=" {0} {1}".format(command,addons[command])
+	return end_command
+
 def parse_command(command):
 	command=command.decode("utf8").split(" ")
 	while "" in command:
@@ -33,8 +39,8 @@ def parse_command(command):
 	cmd["type"]=command[5]
 	return cmd
 
-def run(flow_type,disp_filter="",cap_filter="",types=[]):
-	cmd_path="/Applications/Wireshark.app/Contents/MacOS/tshark -f '{0}' -Y '{1}'".format(cap_filter,disp_filter)#use a diffrent path to get to tshark if needed
+def run(flow_type,cmd_path,types=[]):
+	#cmd_path="\"C:\\Program Files\\Wireshark\\tshark.exe\" -i '{2}' -f '{0}' -Y '{1}'".format(cap_filter,disp_filter,"Wi-Fi")#use a diffrent path to get to tshark if needed
 	print("command: "+cmd_path)
 
 	process=subprocess.Popen(cmd_path,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
@@ -56,10 +62,11 @@ def run(flow_type,disp_filter="",cap_filter="",types=[]):
 				print(line.decode("utf8"))
 
 			if flow_type=="ipl":
-				if command_parsed["from"] not in dont_read and command_parsed["type"] in types:
-					loc_data=get_loc(command_parsed)
-					print(loc_data)
-					dont_read+=[command_parsed["from"]]
+				if command_parsed["from"] not in dont_read:
+					if command_parsed in types or types==[]:
+						loc_data=get_loc(command_parsed)
+						print(loc_data)
+						dont_read+=[command_parsed["from"]]
 
 	except KeyboardInterrupt:
 		process.kill()
@@ -75,9 +82,13 @@ def main():
 
 	disp_filter=""
 	cap_filter=""
-	types=["STUN"]
+	network="Wi-Fi"
+	path="\"C:\\Program Files\\Wireshark\\tshark.exe\""
+	addons={"-i":network}
+	cmd=create_command(path,addons)
+	types=["STUN","DNS"]
 
-	run(flow,disp_filter=disp_filter,cap_filter=cap_filter,types=types)
+	run(flow,cmd,types=types)
 	print("packet tracing over")
 
 if __name__=="__main__":
