@@ -1,0 +1,65 @@
+import socket, requests, subprocess
+print("modules gotten")
+
+__author__="(youtube creator https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A), 16/02/2020-**/**/**** version 1.001 at the time."
+
+"""priorities:
+create basic class operations
+"""
+
+class command_terminal:
+	def __init__(self,command):
+		self.command=command
+		self.process=None
+
+	def _create_command(self,variables):
+		end_command=self.command
+		for var_name in variables.keys():
+			end_command+=" {0} {1}".format(var_name,variables[var_name])
+		return(end_command)
+
+	def start_process(self,variables):
+		if self.process!=None:
+			raise(ValueError("process is still running"))
+		cmd_command=self._create_command(variables)
+		self.process=subprocess.Popen(cmd_command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+		return(None)
+
+	def read_process(self):
+		if self.process==None:
+			raise(TypeError("Nonetype cannot be iterated"))
+		return(iter(self.process.stdout.readline,b""))
+
+	def kill_process(self):
+		if self.process==None:
+			raise(TypeError("Nonetype cannot be killed"))
+		self.process.kill()
+		self.process=None
+		return(None)
+
+class tshark_run(command_terminal):
+	def __init__(self,*args,**kwargs):
+		command_terminal.__init__(self,*args,**kwargs)
+		self.computer_network_ip=self._computer_ip()
+
+	def _computer_ip(self,connection_address=("8.8.8.8",80)):
+		sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		sock.connect(connection_adress)
+		name=sock.getsockname()[0]
+		sock.close()
+		return(name)
+
+	def _parse_tshark_command(self,command):
+		command=command.decode("utf8").split(" ")
+		while "" in command:
+			command.remove("")
+		if len(command)<7:
+			return(None)
+		cmd={}
+		cmd["no"]=command[0]
+		cmd["time"]=command[1]
+		cmd["source"]=command[2]
+		cmd["destination"]=command[4]
+		cmd["protocal"]=command[5]
+		cmd["length"]=command[6]
+		return(cmd)
