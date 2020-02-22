@@ -1,0 +1,183 @@
+import socket, requests, subprocess
+print("modules gotten")
+
+__author__="(youtube creator https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A), 16/02/2020-**/**/**** version 1.001 at the time."
+
+"""priorities:
+create basic class operations
+"""
+
+class command_terminal:
+	def __init__(self,command):
+		self.command=command
+		self.process=None
+
+	def _create_command(self,variables):
+		end_command=self.command
+		for var_name in variables.keys():
+			end_command+=" {0} {1}".format(var_name,variables[var_name])
+		return(end_command)
+
+	def start_process(self,variables):
+		if self.process!=None:
+			raise(ValueError("process is still running"))
+		cmd_command=self._create_command(variables)
+		self.process=subprocess.Popen(cmd_command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+		return(None)
+
+	def read_process(self):
+		if self.process==None:
+			raise(TypeError("Nonetype cannot be iterated"))
+		return(iter(self.process.stdout.readline,b""))
+
+	def kill_process(self):
+		if self.process==None:
+			raise(TypeError("Nonetype cannot be killed"))
+		self.process.kill()
+		self.process=Noneimport socket, requests, subprocess
+
+__author__="(youtube creator https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A), 16/02/2020-**/**/**** version 1.001 at the time."
+
+"""priorities:
+create basic class operations
+"""
+
+class command_terminal:
+	def __init__(self,command):
+		self.command=command
+		self.process=None
+
+	def _create_command(self,variables):
+		end_command=self.command
+		for var_name in variables.keys():
+			end_command+=" "+var_name
+			if variables[var_name]!="":
+				end_command+=variables[var_name]
+		return(end_command)
+
+	def start_process(self,variables,shell_bool=True):
+		if self.process!=None:
+			raise(TypeError("Process type is not 'None' as expected."))
+		cmd_command=self._create_command(variables)
+		self.process=subprocess.Popen(cmd_command,shell=shell_bool,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+		return(None)
+
+	def read_process(self):
+		if str(type(self.process))!="<class 'subprocess.Popen'>":
+			raise(TypeError("Process type is not 'subprocess.Popen' as expected."))
+		return(iter(self.process.stdout.readline,b""))
+
+	def kill_process(self):
+		if str(type(self.process))!="<class 'subprocess.Popen'>":
+			raise(TypeError("Process type is not 'subprocess.Popen' as expected."))
+		self.process.kill()
+		self.process=None
+		return(None)
+
+class tshark_runner(command_terminal):
+	def __init__(self,*args,**kwargs):
+		command_terminal.__init__(self,*args,**kwargs)
+		self.computer_network_ip=self._computer_ip()
+
+	def _computer_ip(self,connection_address=("8.8.8.8",80)):
+		sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		sock.connect(connection_address)
+		name=sock.getsockname()[0]
+		sock.close()
+		return(name)
+
+	def _parse_tshark_output(self,command):
+		command=command.decode("utf8")
+		o_command=command
+		command=command.split(" ")
+		while "" in command:
+			command.remove("")
+		if len(command)<7:
+			return({"raw":o_command,"source":""})
+		cmd={}
+		cmd["no"]=command[0]
+		cmd["time"]=command[1]
+		cmd["source"]=command[2]
+		cmd["destination"]=command[4]
+		cmd["protocal"]=command[5]
+		cmd["length"]=command[6]
+		cmd["info"]=" ".join(command[7:])
+		cmd["raw"]=o_command
+		return(cmd)
+
+	def _get_string(self,jdata,raw_show=False,c_raw_show=False):
+		if c_raw_show and jdata["source"]=="":
+			return(jdata["raw"])
+		if raw_show:
+			return(jdata["raw"])
+		ip=jdata["source"]
+		url="https://ipinfo.io/{}/json".format(str(ip))
+		data=requests.get(url,headers={"User-agent":"Chrome"}).json()
+		if "bogon" in data.keys():
+			return("\n{} is a bogon address\n\n-----------".format(ip))
+
+		try:
+			return("\ndata:\n\nip:'{ip}'\nto:'{{destination}}'\ncountry:'{country}'\nregion:'{region}'\ncity:'{city}'\nlocation:'{loc}'\npostal:'{postal}'\nmore accurate:'https://whatismyipaddress.com/ip/{ip}'\n\n-----------".format(**data).format(**jdata))
+
+		except Exception as e:
+			return("\n{1} ERROR,{0}\n\n-----------".format(str(e),ip))
+
+	def raw_run(self,variables={}):
+		self.start_process(variables)
+		for line in self.read_process():
+			yield(line.decode("utf8"))
+		self.kill_process()
+
+	def identify_networks(self):
+		return(self.raw_run(variables={"-D":""}))
+
+	def ipl_run(self,variables={},protocals=[],raw_show=False,c_raw_show=False):
+		self.start_process(variables)
+		known=[self.computer_network_ip]
+		try:
+			for line in self.read_process():
+				parsed=self._parse_tshark_output(line)
+				if protocals==[] or parsed["protocal"] in protocals:
+					if parsed["source"] not in known and parsed["source"]!="":
+						yield(self._get_string(parsed,raw_show=raw_show,c_raw_show=c_raw_show))
+						known+=[parsed["source"]]
+		except KeyboardInterrupt:
+			self.kill_process()
+		return(None)
+
+def main():
+	my_c=tshark_runner("/Applications/Wireshark.app/Contents/MacOS/tshark")
+	variables={"-i":"'Wi-Fi'"}
+	generator_c=my_c.raw_run(variables)
+	for v in generator_c:
+		print(v)
+if __name__=="__main__":
+	main()
+		return(None)
+
+class tshark_run(command_terminal):
+	def __init__(self,*args,**kwargs):
+		command_terminal.__init__(self,*args,**kwargs)
+		self.computer_network_ip=self._computer_ip()
+
+	def _computer_ip(self,connection_address=("8.8.8.8",80)):
+		sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		sock.connect(connection_adress)
+		name=sock.getsockname()[0]
+		sock.close()
+		return(name)
+
+	def _parse_tshark_command(self,command):
+		command=command.decode("utf8").split(" ")
+		while "" in command:
+			command.remove("")
+		if len(command)<7:
+			return(None)
+		cmd={}
+		cmd["no"]=command[0]
+		cmd["time"]=command[1]
+		cmd["source"]=command[2]
+		cmd["destination"]=command[4]
+		cmd["protocal"]=command[5]
+		cmd["length"]=command[6]
+		return(cmd)
