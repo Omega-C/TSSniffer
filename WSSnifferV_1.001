@@ -1,45 +1,10 @@
 import socket, requests, subprocess
-print("modules gotten")
 
-__author__="(youtube creator https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A), 16/02/2020-**/**/**** version 1.001 at the time."
+__author__="(youtube creator https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A), 19/02/2020-22/02/2020 version 1.001 at the time."
 
-"""priorities:
-create basic class operations
 """
-
-class command_terminal:
-	def __init__(self,command):
-		self.command=command
-		self.process=None
-
-	def _create_command(self,variables):
-		end_command=self.command
-		for var_name in variables.keys():
-			end_command+=" {0} {1}".format(var_name,variables[var_name])
-		return(end_command)
-
-	def start_process(self,variables):
-		if self.process!=None:
-			raise(ValueError("process is still running"))
-		cmd_command=self._create_command(variables)
-		self.process=subprocess.Popen(cmd_command,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-		return(None)
-
-	def read_process(self):
-		if self.process==None:
-			raise(TypeError("Nonetype cannot be iterated"))
-		return(iter(self.process.stdout.readline,b""))
-
-	def kill_process(self):
-		if self.process==None:
-			raise(TypeError("Nonetype cannot be killed"))
-		self.process.kill()
-		self.process=Noneimport socket, requests, subprocess
-
-__author__="(youtube creator https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A), 16/02/2020-**/**/**** version 1.001 at the time."
-
-"""priorities:
-create basic class operations
+Documentation:
+https://www.wireshark.org/docs/man-pages/tshark.html
 """
 
 class command_terminal:
@@ -137,8 +102,8 @@ class tshark_runner(command_terminal):
 		try:
 			for line in self.read_process():
 				parsed=self._parse_tshark_output(line)
-				if protocals==[] or parsed["protocal"] in protocals:
-					if parsed["source"] not in known and parsed["source"]!="":
+				if (parsed["source"]!=""):
+					if (protocals==[] or parsed["protocal"] in protocals) and parsed["source"] not in known:
 						yield(self._get_string(parsed,raw_show=raw_show,c_raw_show=c_raw_show))
 						known+=[parsed["source"]]
 		except KeyboardInterrupt:
@@ -148,7 +113,8 @@ class tshark_runner(command_terminal):
 def main():
 	my_c=tshark_runner("/Applications/Wireshark.app/Contents/MacOS/tshark")
 	variables={"-i":"'Wi-Fi'"}
-	generator_c=my_c.raw_run(variables)
+	protocals=["STUN"]
+	generator_c=my_c.ipl_run(variables=variables,protocals=protocals)
 	for v in generator_c:
 		print(v)
 if __name__=="__main__":
