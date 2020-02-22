@@ -153,31 +153,3 @@ def main():
 		print(v)
 if __name__=="__main__":
 	main()
-		return(None)
-
-class tshark_run(command_terminal):
-	def __init__(self,*args,**kwargs):
-		command_terminal.__init__(self,*args,**kwargs)
-		self.computer_network_ip=self._computer_ip()
-
-	def _computer_ip(self,connection_address=("8.8.8.8",80)):
-		sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-		sock.connect(connection_adress)
-		name=sock.getsockname()[0]
-		sock.close()
-		return(name)
-
-	def _parse_tshark_command(self,command):
-		command=command.decode("utf8").split(" ")
-		while "" in command:
-			command.remove("")
-		if len(command)<7:
-			return(None)
-		cmd={}
-		cmd["no"]=command[0]
-		cmd["time"]=command[1]
-		cmd["source"]=command[2]
-		cmd["destination"]=command[4]
-		cmd["protocal"]=command[5]
-		cmd["length"]=command[6]
-		return(cmd)
