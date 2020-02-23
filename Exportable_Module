@@ -1,0 +1,141 @@
+import socket, requests, subprocess
+
+__author__="(youtube creator https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A), S.R., https://github.com/Omega-C, 22/02/2020-23/02/2020 version 1.01 (lets ignore the extra 0 in the 1.001 part)."
+
+"""
+hey, please dont try and pass this off as your own, I added a fair use licence in the github.
+
+
+Documentation:
+https://www.wireshark.org/docs/man-pages/tshark.html
+(read it, it helps belive it or not)
+
+Notes:
+-T ek can be used to capture json data of a packet along with -T json, using -T filter then -e can capture a specific part
+"""
+
+class t-command:
+	def __init__(self,data):
+		"""a class for holding commands and parsing for the command, you can also use the json of -T ek and -T json to get more info"""
+		self.json=None
+		if data.replace(" ","")[0]=="{" and data.replace(" ","")[-1]=="}":
+			try:
+				ev=eval(data)
+				self.json=ev
+			except Exception as e:
+				raise(TypeError("thats not a valid json command (dont try anything cheeky like use '{1:print(\"hello world\")}')"))
+		#add more stuff like getitem magic method or call magic method
+
+class command_terminal:
+	def __init__(self,command):
+		"""a simple shell for a shell that uses Popen"""
+		self.command=command
+		self.process=None
+
+	def _create_command(self,variables):
+		end_command=self.command
+		for var_name in variables.keys():
+			end_command+=" "+var_name
+			if variables[var_name]!="":
+				end_command+=variables[var_name]
+		return(end_command)
+
+	def start_process(self,variables,shell_bool=True):
+		if self.process!=None:
+			raise(TypeError("Process type is not 'None' as expected."))
+		cmd_command=self._create_command(variables)
+		self.process=subprocess.Popen(cmd_command,shell=shell_bool,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+		return(None)
+
+	def read_process(self):
+		if str(type(self.process))!="<class 'subprocess.Popen'>":
+			raise(TypeError("Process type is not 'subprocess.Popen' as expected."))
+		return(iter(self.process.stdout.readline,b""))
+
+	def kill_process(self):
+		if str(type(self.process))!="<class 'subprocess.Popen'>":
+			raise(TypeError("Process type is not 'subprocess.Popen' as expected."))
+		self.process.kill()
+		self.process=None
+		return(None)
+
+class tshark_runner(command_terminal):
+	def __init__(self,*args,**kwargs):
+		"""the shell for the shell for the shell that can run commands"""
+		command_terminal.__init__(self,*args,**kwargs)
+		self.computer_network_ip=self._computer_ip()
+
+	def _computer_ip(self,connection_address=("8.8.8.8",80)):
+		sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+		sock.connect(connection_address)
+		name=sock.getsockname()[0]
+		sock.close()
+		return(name)
+
+	#add to parser object
+	def _parse_tshark_output(self,command):
+		command=command.decode("utf8")
+		o_command=command
+		command=command.split(" ")
+		while "" in command:
+			command.remove("")
+		if len(command)<7:
+			return({"raw":o_command,"source":""})
+		cmd={}
+		cmd["no"]=command[0]
+		cmd["time"]=command[1]
+		cmd["source"]=command[2]
+		cmd["destination"]=command[4]
+		cmd["protocol"]=command[5]
+		cmd["length"]=command[6]
+		cmd["info"]=" ".join(command[7:])
+		cmd["raw"]=o_command
+		return(cmd)
+
+	#add to the parser object
+	def _get_string(self,jdata,raw_show=False,c_raw_show=False):
+		if c_raw_show and jdata["source"]=="":
+			return(jdata["raw"])
+		if raw_show:
+			return(jdata["raw"])
+		ip=jdata["source"]
+		url="https://ipinfo.io/{}/json".format(str(ip))
+		data=requests.get(url,headers={"User-agent":"Chrome"}).json()
+		if "bogon" in data.keys():
+			return("\n{} is a bogon address\n\n-----------".format(ip))
+
+		try:
+			return("\ndata:\n\nip:'{ip}'\nto:'{{destination}}'\ncountry:'{country}'\nregion:'{region}'\ncity:'{city}'\nlocation:'{loc}'\npostal:'{postal}'\nmore accurate:'https://whatismyipaddress.com/ip/{ip}'\n\n-----------".format(**data).format(**jdata))
+
+		except Exception as e:
+			return("\n{1} ERROR,{0}\n\n-----------".format(str(e),ip))
+
+	def raw_execute(self,variables={},json=False):
+		self.start_process(variables)
+		for line in self.read_process():
+			if json:
+				yield(self._parse_tshark_output(line))
+			else:
+				yield(line.decode("utf8"))
+		self.kill_process()
+
+	#gotta remove this, people can do this themself
+	def identify_networks(self):
+		return(self.raw_execute(variables={"-D":""}))
+
+	#get this out of the class, maybe just floating around for free use
+	def ipl_run(self,variables={},protocols=[],raw_show=False,c_raw_show=False):
+		self.start_process(variables)
+		known=[self.computer_network_ip]
+		try:
+			for line in self.read_process():
+				parsed=self._parse_tshark_output(line)
+				if (parsed["source"]!=""):
+					if (protocols==[] or parsed["protocol"] in protocols) and parsed["source"] not in known:
+						yield(self._get_string(parsed,raw_show=raw_show,c_raw_show=c_raw_show))
+						known+=[parsed["source"]]
+		except KeyboardInterrupt:
+			self.kill_process()
+		return(None)
+
+	#maybe make a decorator that can run a function because its cool and hip
