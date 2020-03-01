@@ -1,34 +1,110 @@
 import socket, requests, subprocess
 
-__author__="(youtube creator https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A), S.R., https://github.com/Omega-C, 22/02/2020-23/02/2020 version 1.01 (lets ignore the extra 0 in the 1.001 part)."
+__author__="""youtube channel: https://www.youtube.com/channel/UCMADIRDf7d8pVG719yn1t4A,
+Initials: S.R.
+Github Name: Omega-C
+22/02/2020-29/02/2020 (I procrastonated a bit)
+version 1.03"""
 
-"""
-hey, please dont try and pass this off as your own, I added a fair use licence in the github.
+__annotations__="""hey, please dont try and pass this off as your own, I added a fair use licence in the github. If this is an old program, the links may not be valid or may be re-used.
 
+must install tshark
 
 Documentation:
 https://www.wireshark.org/docs/man-pages/tshark.html
-(read it, it helps belive it or not)
+(read it if you haven't, it helps belive it or not)
 
-Notes:
--T ek can be used to capture json data of a packet along with -T json, using -T filter then -e can capture a specific part
+Note:
+im just a teen programmer, dont expect anything great, I just did this in my off time from scratch to make things more interfacable (kinda like my email module, gotta make my github more organised).
+prot1:copy and paste from *person*
+prot2:cant find out how to do it
+prot3:possible new feature
+prot4:regular note
+prot5:debugging
 """
 
-class t-command:
-	def __init__(self,data):
-		"""a class for holding commands and parsing for the command, you can also use the json of -T ek and -T json to get more info"""
-		self.json=None
-		if data.replace(" ","")[0]=="{" and data.replace(" ","")[-1]=="}":
-			try:
-				ev=eval(data)
-				self.json=ev
-			except Exception as e:
-				raise(TypeError("thats not a valid json command (dont try anything cheeky like use '{1:print(\"hello world\")}')"))
-		#add more stuff like getitem magic method or call magic method
+class tcommand:
+	"""a class for holding commands and parsing for the command, you can also use the json of -T ek and -T json to get more info (ek works well). Not reccomended for feilds, pdml, or psml because it will not show extra data"""
+	def __init__(self,data,error_show=True):
+		if str(type(data))=="<class 'bytes'>":
+			data=data.decode("utf8")
+		self.raw=data
+		self.decoded_response=None
+		try:
+			if data.replace(" ","")[0]=="{" and data.replace(" ","")[-1]=="}":
+				self.raw=self.jsonify(data)
+				#print(self.json)#prot5
+				self.decoded_response=self._parse_tshark_output_json(self.raw)
+			elif data.replace(" ","")[0]!="<":
+				self.decoded_response=self._parse_tshark_output_normal(self.raw)
+		except Exception as e:
+			if error_show:
+				raise(e)
+
+	def __getitem__(self,item):
+		if self.decoded_response!=None:
+			return(self.decoded_response[item])
+		else:
+			return(None)
+
+	def jsonify(self,data):
+		changes={"false":"False","true":"True","null":"None"}
+		for json_form in list(changes):
+			data=data.replace(json_form,changes[json_form])
+		return(eval(data))
+
+	def _parse_tshark_output_json(self,command):
+		try:
+			cmd={}
+			cmd["no"]=command["layers"]["frame"]["frame_frame_number"]
+			cmd["time"]=command["layers"]["frame"]["frame_frame_time"]
+			cmd["source"]=command["layers"]["ip"]["ip_ip_src"]
+			cmd["destination"]=command["layers"]["ip"]["ip_ip_dst"]
+			cmd["protocol"]=None#prot2 cant find the structure
+			cmd["length"]=command["layers"]["frame"]["frame_frame_len"]
+			cmd["info"]=None#prot2 cant find structure
+			return(cmd)
+		except KeyError:
+			raise(TypeError("thats not the expected data structure, sorry."))
+
+
+	def _parse_tshark_output_normal(self,command):
+		try:
+			replaceable={"\n":"","\t":"","\r":""}
+			o_command=command
+			for rep_v in replaceable:
+				command=command.replace(rep_v,replaceable[rep_v])
+			command=command.split(" ")
+			while "" in command:
+				command.remove("")
+			if len(command)<7:
+				return({"raw":o_command,"source":""})
+			cmd={}
+			cmd["no"]=command[0]
+			cmd["time"]=command[1]
+			cmd["source"]=command[2]
+			cmd["destination"]=command[4]
+			cmd["protocol"]=command[5]
+			cmd["length"]=command[6]
+			cmd["info"]=" ".join(command[7:])
+			return(cmd)
+		except KeyError:
+			raise(TypeError("thats not the expected data structure, sorry."))
+
+	#prot4 add to the parser object
+	def get_location(self,ip_kw="source"):
+		jdata=self.decoded_response
+		ip=jdata[ip_kw]
+		url="https://ipinfo.io/{}/json".format(str(ip))
+		data={}
+		if len(ip.split("."))==4:
+			data=dict(requests.get(url,headers={"User-agent":"Chrome"}).json())
+			data["more_accurate_link"]="https://whatismyipaddress.com/ip/"+ip
+		return(data)
 
 class command_terminal:
+	"""a simple shell for a shell that uses Popen"""
 	def __init__(self,command):
-		"""a simple shell for a shell that uses Popen"""
 		self.command=command
 		self.process=None
 
@@ -60,8 +136,8 @@ class command_terminal:
 		return(None)
 
 class tshark_runner(command_terminal):
+	"""the shell for the shell for the shell that can run commands"""
 	def __init__(self,*args,**kwargs):
-		"""the shell for the shell for the shell that can run commands"""
 		command_terminal.__init__(self,*args,**kwargs)
 		self.computer_network_ip=self._computer_ip()
 
@@ -71,44 +147,6 @@ class tshark_runner(command_terminal):
 		name=sock.getsockname()[0]
 		sock.close()
 		return(name)
-
-	#add to parser object
-	def _parse_tshark_output(self,command):
-		command=command.decode("utf8")
-		o_command=command
-		command=command.split(" ")
-		while "" in command:
-			command.remove("")
-		if len(command)<7:
-			return({"raw":o_command,"source":""})
-		cmd={}
-		cmd["no"]=command[0]
-		cmd["time"]=command[1]
-		cmd["source"]=command[2]
-		cmd["destination"]=command[4]
-		cmd["protocol"]=command[5]
-		cmd["length"]=command[6]
-		cmd["info"]=" ".join(command[7:])
-		cmd["raw"]=o_command
-		return(cmd)
-
-	#add to the parser object
-	def _get_string(self,jdata,raw_show=False,c_raw_show=False):
-		if c_raw_show and jdata["source"]=="":
-			return(jdata["raw"])
-		if raw_show:
-			return(jdata["raw"])
-		ip=jdata["source"]
-		url="https://ipinfo.io/{}/json".format(str(ip))
-		data=requests.get(url,headers={"User-agent":"Chrome"}).json()
-		if "bogon" in data.keys():
-			return("\n{} is a bogon address\n\n-----------".format(ip))
-
-		try:
-			return("\ndata:\n\nip:'{ip}'\nto:'{{destination}}'\ncountry:'{country}'\nregion:'{region}'\ncity:'{city}'\nlocation:'{loc}'\npostal:'{postal}'\nmore accurate:'https://whatismyipaddress.com/ip/{ip}'\n\n-----------".format(**data).format(**jdata))
-
-		except Exception as e:
-			return("\n{1} ERROR,{0}\n\n-----------".format(str(e),ip))
 
 	def raw_execute(self,variables={},json=False):
 		self.start_process(variables)
@@ -123,19 +161,35 @@ class tshark_runner(command_terminal):
 	def identify_networks(self):
 		return(self.raw_execute(variables={"-D":""}))
 
-	#get this out of the class, maybe just floating around for free use
-	def ipl_run(self,variables={},protocols=[],raw_show=False,c_raw_show=False):
+	def run_function_as_self(self,function):
+		def runner(*args,**kwargs):
+			return(function(self,*args,**kwargs))
+		return runner
+
+#example script
+def _example():
+	trunner=tshark_runner(r'"C:\Program Files\Wireshark\tshark.exe"')
+
+	@trunner.run_function_as_self
+	def ipl_run(self,variables={},protocols=[]):
 		self.start_process(variables)
 		known=[self.computer_network_ip]
 		try:
 			for line in self.read_process():
-				parsed=self._parse_tshark_output(line)
-				if (parsed["source"]!=""):
-					if (protocols==[] or parsed["protocol"] in protocols) and parsed["source"] not in known:
-						yield(self._get_string(parsed,raw_show=raw_show,c_raw_show=c_raw_show))
-						known+=[parsed["source"]]
+				command=tcommand(line)
+				if command["source"] not in known:
+					known+=[command["source"]]
+					yield(command.get_location())
 		except KeyboardInterrupt:
 			self.kill_process()
+			print("killed process")
 		return(None)
 
-	#maybe make a decorator that can run a function because its cool and hip
+	generator=ipl_run(variables={"-i":"Wi-Fi"})
+
+	for value in generator:
+		print(value)
+
+if __name__=="__main__":
+	print("executing example")
+	_example()
