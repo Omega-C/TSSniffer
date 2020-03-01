@@ -156,10 +156,6 @@ class tshark_runner(command_terminal):
 				yield(line.decode("utf8"))
 		self.kill_process()
 
-	#gotta remove this, people can do this themself
-	def identify_networks(self):
-		return(self.raw_execute(variables={"-D":""}))
-
 	def run_function_as_self(self,function):
 		def runner(*args,**kwargs):
 			return(function(self,*args,**kwargs))
