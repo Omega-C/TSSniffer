@@ -41,6 +41,11 @@ class tcommand:
 			if error_show:
 				raise(e)
 
+	def decoded(self):
+		if self.decoded_response==None:
+			return(False)
+		return(True)
+
 	def __getitem__(self,item):
 		if self.decoded_response!=None:
 			return(self.decoded_response[item])
@@ -78,7 +83,7 @@ class tcommand:
 			while "" in command:
 				command.remove("")
 			if len(command)<7:
-				return({"raw":o_command,"source":""})
+				return(None)
 			cmd={}
 			cmd["no"]=command[0]
 			cmd["time"]=command[1]
@@ -92,14 +97,15 @@ class tcommand:
 			raise(TypeError("thats not the expected data structure, sorry."))
 
 	def get_location(self,ip_kw="source"):
-		jdata=self.decoded_response
-		ip=jdata[ip_kw]
+		ip=self[ip_kw]
 		url="https://ipinfo.io/{}/json".format(str(ip))
 		data={}
-		if len(ip.split("."))==4 or len(ip.split(":"))==8:
+		try:
 			data=dict(requests.get(url,headers={"User-agent":"Chrome"}).json())
 			data["more_accurate_link"]="https://whatismyipaddress.com/ip/"+ip
-		return(data)
+			return(data)
+		except Exception as e:
+			raise(e)
 
 class command_terminal:
 	"""a simple shell for a shell that uses Popen"""
@@ -156,7 +162,7 @@ class tshark_runner(command_terminal):
 				yield(line.decode("utf8"))
 		self.kill_process()
 
-	def run_function_as_self(self,function):
+	def run_as_self(self,function):
 		def runner(*args,**kwargs):
 			return(function(self,*args,**kwargs))
 		return runner
@@ -165,16 +171,17 @@ class tshark_runner(command_terminal):
 def _example():
 	trunner=tshark_runner(r'"C:\Program Files\Wireshark\tshark.exe"')
 
-	@trunner.run_function_as_self
-	def ipl_run(self,variables={},protocols=[]):
+	@trunner.run_as_self
+	def ipl_run(self,variables={}):
 		self.start_process(variables)
 		known=[self.computer_network_ip]
 		try:
 			for line in self.read_process():
 				command=tcommand(line)
-				if command["source"] not in known:
-					known+=[command["source"]]
-					yield(command.get_location())
+				if command.decoded():
+					if command["source"] not in known:
+						known+=[command["source"]]
+						yield(command.get_location())
 		except KeyboardInterrupt:
 			self.kill_process()
 			print("killed process")
