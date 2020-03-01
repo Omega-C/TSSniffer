@@ -91,7 +91,6 @@ class tcommand:
 		except KeyError:
 			raise(TypeError("thats not the expected data structure, sorry."))
 
-	#prot4 add to the parser object
 	def get_location(self,ip_kw="source"):
 		jdata=self.decoded_response
 		ip=jdata[ip_kw]
