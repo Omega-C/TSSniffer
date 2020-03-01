@@ -96,7 +96,7 @@ class tcommand:
 		ip=jdata[ip_kw]
 		url="https://ipinfo.io/{}/json".format(str(ip))
 		data={}
-		if len(ip.split("."))==4:
+		if len(ip.split("."))==4 or len(ip.split(":"))==8:
 			data=dict(requests.get(url,headers={"User-agent":"Chrome"}).json())
 			data["more_accurate_link"]="https://whatismyipaddress.com/ip/"+ip
 		return(data)
