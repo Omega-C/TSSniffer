@@ -8,8 +8,6 @@ version 1.03"""
 
 __annotations__="""hey, please dont try and pass this off as your own, I added a fair use licence in the github. If this is an old program, the links may not be valid or may be re-used.
 
-must install tshark
-
 Documentation:
 https://www.wireshark.org/docs/man-pages/tshark.html
 (read it if you haven't, it helps belive it or not)
@@ -27,7 +25,7 @@ class tcommand:
 	"""a class for holding commands and parsing for the command, you can also use the json of -T ek and -T json to get more info (ek works well). Not reccomended for feilds, pdml, or psml because it will not show extra data"""
 	def __init__(self,data,error_show=True):
 		if str(type(data))=="<class 'bytes'>":
-			data=data.decode("utf8")
+			data=data.decode("unicode-escape")
 		self.raw=data
 		self.decoded_response=None
 		try:
@@ -40,11 +38,6 @@ class tcommand:
 		except Exception as e:
 			if error_show:
 				raise(e)
-
-	def decoded(self):
-		if self.decoded_response==None:
-			return(False)
-		return(True)
 
 	def __getitem__(self,item):
 		if self.decoded_response!=None:
@@ -83,7 +76,7 @@ class tcommand:
 			while "" in command:
 				command.remove("")
 			if len(command)<7:
-				return(None)
+				return({"raw":o_command,"source":""})
 			cmd={}
 			cmd["no"]=command[0]
 			cmd["time"]=command[1]
@@ -96,16 +89,18 @@ class tcommand:
 		except KeyError:
 			raise(TypeError("thats not the expected data structure, sorry."))
 
+	#prot4 add to the parser object
 	def get_location(self,ip_kw="source"):
-		ip=self[ip_kw]
+		jdata=self.decoded_response
+		ip=jdata[ip_kw]
 		url="https://ipinfo.io/{}/json".format(str(ip))
 		data={}
-		try:
+		if len(ip.split("."))==4:
 			data=dict(requests.get(url,headers={"User-agent":"Chrome"}).json())
 			data["more_accurate_link"]="https://whatismyipaddress.com/ip/"+ip
-			return(data)
-		except Exception as e:
-			raise(e)
+		return(data)
+
+	#prot3 add more stuff like getitem magic method or call magic method
 
 class command_terminal:
 	"""a simple shell for a shell that uses Popen"""
@@ -162,7 +157,11 @@ class tshark_runner(command_terminal):
 				yield(line.decode("utf8"))
 		self.kill_process()
 
-	def run_as_self(self,function):
+	#gotta remove this, people can do this themself
+	def identify_networks(self):
+		return(self.raw_execute(variables={"-D":""}))
+
+	def run_function_as_self(self,function):
 		def runner(*args,**kwargs):
 			return(function(self,*args,**kwargs))
 		return runner
@@ -171,23 +170,25 @@ class tshark_runner(command_terminal):
 def _example():
 	trunner=tshark_runner(r'"C:\Program Files\Wireshark\tshark.exe"')
 
-	@trunner.run_as_self
-	def ipl_run(self,variables={}):
+	@trunner.run_function_as_self
+	def ipl_run(self,variables={},protocols=[]):
 		self.start_process(variables)
 		known=[self.computer_network_ip]
 		try:
 			for line in self.read_process():
 				command=tcommand(line)
-				if command.decoded():
-					if command["source"] not in known:
+				if command["source"] not in known and "protocol" in command.decoded_response.keys():
+					if command["protocol"] in protocols or protocols==[]:
 						known+=[command["source"]]
-						yield(command.get_location())
+						location_data=command.get_location()
+						if "country" in location_data.keys():
+							yield("{ip}:\n\tlocation: {country}/{region}/{city}\n\torg: {org}\n\tmore accurate: {more_accurate_link}\n\n".format(**location_data))
 		except KeyboardInterrupt:
 			self.kill_process()
 			print("killed process")
 		return(None)
 
-	generator=ipl_run(variables={"-i":"Wi-Fi"})
+	generator=ipl_run(variables={"-i":"Wi-Fi"},protocols=["STUN"])
 
 	for value in generator:
 		print(value)
